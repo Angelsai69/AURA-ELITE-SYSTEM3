@@ -1,0 +1,53 @@
+
+body {
+  margin: 0;
+  background: #050505;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.chat {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.messages {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.user { text-align: right; }
+.assistant { text-align: left; color: #aaa; }
+
+.input {
+  display: flex;
+}
+
+input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #333;
+  color: white;
+}
+
+button {
+  background: #6e8cff;
+  border: none;
+  color: white;
+}
