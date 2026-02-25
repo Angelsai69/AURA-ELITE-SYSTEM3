@@ -7,22 +7,38 @@ export default function AIChat() {
   const [loading, setLoading] = useState(false)
 
   const sendMessage = async () => {
-    if (!input) return
+    if (!input.trim()) return
     const updated = [...messages, { role: "user", content: input }]
     setMessages(updated)
     setInput("")
     setLoading(true)
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: updated })
-    })
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updated })
+      })
 
-    const data = await res.json()
-    setMessages([...updated, { role: "assistant", content: data.reply }])
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errData.error || `Server error: ${res.status}`)
+      }
 
-    setLoading(false)
+      const text = await res.text()
+      setMessages([...updated, { role: "assistant", content: text }])
+    } catch (err: any) {
+      setMessages([...updated, { role: "assistant", content: `Error: ${err.message}` }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
   }
 
   return (
@@ -37,9 +53,10 @@ export default function AIChat() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Ask about automation..."
         />
-        <button onClick={sendMessage}>Send</button>
+        <button onClick={sendMessage} disabled={loading}>Send</button>
       </div>
     </div>
   )
