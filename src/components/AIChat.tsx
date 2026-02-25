@@ -19,9 +19,9 @@ export default function AIChat() {
       body: JSON.stringify({ messages: updated })
     })
 
-    const text = await res.text()
+    const data = await res.json()
+    setMessages([...updated, { role: "assistant", content: data.reply }])
 
-    setMessages([...updated, { role: "assistant", content: text }])
     setLoading(false)
   }
 
