@@ -1,8 +1,6 @@
-
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle CORS preflight
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
@@ -15,46 +13,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" })
   }
 
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
-    console.error("OPENAI_API_KEY environment variable is not set")
+    console.error("OPENROUTER_API_KEY is not set")
     return res.status(500).json({ error: "Server configuration error: missing API key" })
   }
 
-  const { messages } = req.body
-
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Invalid request: messages array required" })
+  let messages: any[]
+  try {
+    messages = req.body?.messages
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Invalid request: messages array required" })
+    }
+  } catch {
+    return res.status(400).json({ error: "Invalid JSON body" })
   }
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://aura-elite.vercel.app", // optional but recommended by OpenRouter
+        "X-Title": "Aura Elite",                         // optional: shows in OpenRouter dashboard
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini", // swap this for any model on openrouter.ai/models
         messages,
-        max_tokens: 1000
-      })
+        max_tokens: 1000,
+      }),
     })
 
+    const data = await response.json()
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error("OpenAI API error:", response.status, errorData)
-      return res.status(502).json({
-        error: `OpenAI API error: ${response.status}`,
-        details: errorData
+      console.error("OpenRouter error:", response.status, data)
+      return res.status(200).json({
+        error: data?.error?.message || `OpenRouter error: ${response.status}`,
       })
     }
 
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content ?? ""
+    const content: string = data.choices?.[0]?.message?.content ?? ""
     return res.status(200).send(content)
-  } catch (err) {
-    console.error("Unexpected error in /api/chat:", err)
+  } catch (err: any) {
+    console.error("Handler error:", err?.message || err)
     return res.status(500).json({ error: "Internal server error" })
   }
 }
